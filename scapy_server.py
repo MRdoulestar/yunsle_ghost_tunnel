@@ -34,7 +34,8 @@ def getCmd():
 
 #命令封装为dot11elt帧
 def getEltPayload(cmd):
-    return Dot11Elt(ID=221, info=('\x63\x63\x63'+cmd))
+    #加入了时间戳哈希
+    return Dot11Elt(ID=221, info=('\x63\x63\x63'+str(hash(time.time()))[0:8]+cmd))
 
 #封装为dot11完整帧
 def getPayloadFrame(cmd, ct_addr2, addr2, addr3):
@@ -70,7 +71,7 @@ def handle(packet):
             #发送包含控制命令的Response帧
             sendCmd(response_frame)
             #这里只要发送完毕既退出
-            exit(1)
+            #exit(1)
 
 if __name__ == "__main__":
     print "waiting for wake up......."
